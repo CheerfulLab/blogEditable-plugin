@@ -1,9 +1,12 @@
-<?php namespace RainLab\Editable\Components;
+<?php namespace CheerfulLab\BlogEditable\Components;
 
-use File;
+use Cms\Classes\Page;
 use BackendAuth;
 use Cms\Classes\Content;
 use Cms\Classes\ComponentBase;
+use League\HTMLToMarkdown\HtmlConverter;
+use RainLab\Blog\Components\Post;
+use RainLab\Blog\Models\Post as BlogPost;
 
 class Editable extends ComponentBase
 {
@@ -13,33 +16,50 @@ class Editable extends ComponentBase
     public $file;
     public $fileMode;
 
+    /**
+     * @var Post
+     */
+    public $postComponent;
+
+    /**
+     * @var \RainLab\Blog\Models\Post
+     */
+    public $post;
+
     public function componentDetails()
     {
         return [
-            'name'        => 'Editable Component',
-            'description' => 'This component allows in-context editing.'
+            'name'        => 'Editable blog content component',
+            'description' => 'This component allows in-context editing material at blog plugin.'
         ];
     }
 
     public function defineProperties()
     {
         return [
-            'file' => [
-                'title'       => 'File',
-                'description' => 'Content block filename to edit, optional',
-                'default'     => '',
+            'slug' => [
+                'title'       => 'rainlab.blog::lang.settings.post_slug',
+                'description' => 'rainlab.blog::lang.settings.post_slug_description',
+                'default'     => '{{ :slug }}',
+                'type'        => 'string'
+            ],
+            'categoryPage' => [
+                'title'       => 'rainlab.blog::lang.settings.post_category',
+                'description' => 'rainlab.blog::lang.settings.post_category_description',
                 'type'        => 'dropdown',
-            ]
+                'default'     => 'blog/category',
+            ],
         ];
-    }
-
-    public function getFileOptions()
-    {
-        return Content::sortBy('baseFileName')->lists('baseFileName', 'fileName');
     }
 
     public function onRun()
     {
+        $this->postComponent = new Post();
+        $this->postComponent->setProperty('slug', $this->property('slug'));
+        $this->postComponent->setProperty('categoryPage', $this->property('categoryPage'));
+        $this->postComponent->onRun();
+        $this->post = $this->postComponent->post;
+
         $this->isEditor = $this->checkEditor();
 
         if ($this->isEditor) {
@@ -52,42 +72,44 @@ class Editable extends ComponentBase
         }
     }
 
-    public function onRender()
-    {
-        $this->file = $this->property('file');
-        $this->fileMode = File::extension($this->property('file'));
-
-        /*
-         * Compatability with RainLab.Translate
-         */
-        if (class_exists('\RainLab\Translate\Classes\Translator')){
-            $locale = \RainLab\Translate\Classes\Translator::instance()->getLocale();
-            $fileName = substr_replace($this->file, '.'.$locale, strrpos($this->file, '.'), 0);
-            if (($content = Content::loadCached($this->page->controller->getTheme(), $fileName)) !== null)
-                $this->file = $fileName;
-        }
-
-        if (!$this->isEditor)
-            return $this->renderContent($this->file);
-
-        $this->content = $this->renderContent($this->file);
-    }
-
     public function onSave()
     {
         if (!$this->checkEditor())
             return;
 
-        $fileName = post('file');
-        $template = Content::load($this->getTheme(), $fileName);
-        $template->fill(['markup' => post('content')]);
-        $template->save();
+        try {
+            $converter = new HtmlConverter();
+            /**
+             * @var BlogPost $post
+             */
+            $post = BlogPost::findOrFail(post('postId'));
+            $post->content = $converter->convert(post('content'));
+            $post->save();
+        } catch (\Exception $e) {
+            echo 'Error' . $e->getMessage();
+            return;
+        }
     }
 
     public function checkEditor()
     {
         $backendUser = BackendAuth::getUser();
         return $backendUser && $backendUser->hasAccess('cms.manage_content');
+    }
+
+
+    /**
+     * Renders a requested partial in context of this component,
+     * see Cms\Classes\Controller@renderPartial for usage.
+     */
+    public function renderPartial()
+    {
+        $content = $this->postComponent->renderPartial();
+
+        $this->controller->setComponentContext($this);
+        $result = call_user_func_array([$this->controller, 'renderPartial'], func_get_args());
+        $this->controller->setComponentContext(null);
+        return $result;
     }
 
 }

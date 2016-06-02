@@ -24,7 +24,7 @@
 
         this.originalHtml = null;
         this.requestHandler = this.$el.data('handler')
-        this.fileMode = this.$el.data('fileMode')
+        this.postId = this.$el.data('post')
         this.editFile = this.$el.data('file')
 
         this.$controlPanel = $('<div />').addClass('control-editable')
@@ -72,7 +72,7 @@
         this.$cancel.hide()
         $.request(this.requestHandler, {
             data: {
-                file: this.editFile,
+                postId: this.postId,
                 content: html
             }
         })

@@ -1,4 +1,4 @@
-<?php namespace RainLab\Editable;
+<?php namespace  CheerfulLab\BlogEditable;
 
 use System\Classes\PluginBase;
 
@@ -8,6 +8,8 @@ use System\Classes\PluginBase;
 class Plugin extends PluginBase
 {
 
+    public $require = ['RainLab.Blog'];
+
     /**
      * Returns information about this plugin.
      *
@@ -16,9 +18,9 @@ class Plugin extends PluginBase
     public function pluginDetails()
     {
         return [
-            'name'        => 'Editable',
-            'description' => 'In-context content editor',
-            'author'      => 'RainLab',
+            'name'        => 'Blog Editable',
+            'description' => 'In-context content editor for blog',
+            'author'      => 'Pawel Samusev',
             'icon'        => 'icon-leaf'
         ];
     }
@@ -26,7 +28,7 @@ class Plugin extends PluginBase
     public function registerComponents()
     {
         return [
-            'RainLab\Editable\Components\Editable' => 'editable',
+            'CheerfulLab\BlogEditable\Components\Editable' => 'editable_blog',
         ];
     }
 
