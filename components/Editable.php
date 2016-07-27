@@ -112,4 +112,10 @@ class Editable extends ComponentBase
         return $result;
     }
 
+
+    public function getCategoryPageOptions()
+    {
+        return Page::sortBy('baseFileName')->lists('baseFileName', 'baseFileName');
+    }
+
 }
