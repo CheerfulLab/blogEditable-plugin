@@ -54,7 +54,7 @@ class Editable extends ComponentBase
 
     public function onRun()
     {
-        $this->postComponent = new Post();
+        $this->postComponent = new Post($this->page);
         $this->postComponent->setProperty('slug', $this->property('slug'));
         $this->postComponent->setProperty('categoryPage', $this->property('categoryPage'));
         $this->postComponent->onRun();
